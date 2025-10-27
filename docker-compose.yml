@@ -4,7 +4,7 @@ services:
   nginx:
     build:
       context: .
-      dockerfile: dockerfile.nginx
+      dockerfile: Dockerfile.nginx
     ports:
       - "8080:80"
     environment:
