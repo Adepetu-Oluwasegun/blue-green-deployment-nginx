@@ -133,7 +133,7 @@ cd <repo-name>
 docker-compose up -d
 ```
 
-4. Ensure EC2 security groups allow inbound traffic on `$NGINX_PORT` (e.g., 8080).
+4. Ensure EC2 security groups allow inbound traffic PORT 80
 
 ---
 
