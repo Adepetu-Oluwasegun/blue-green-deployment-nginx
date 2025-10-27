@@ -1,7 +1,16 @@
 
 # Blue-Green Deployment with Nginx and Docker Compose on AWS EC2
-
+A production-ready Blue/Green deployment setup with automatic failover using Nginx upstreams. This implementation ensures zero downtime and zero failed client requests during service failures.
 ---
+
+Live Deployment
+This Blue/Green deployment is currently running on AWS EC2:
+
+Public Endpoints:
+
+Main Load Balancer: http://18.212.76.50:8080/version
+Blue Service (Direct): http://18.212.76.50:8081/version
+Green Service (Direct): http://18.212.76.50:8082/version
 
 ## Environment Variables
 
@@ -151,6 +160,16 @@ docker-compose exec nginx nginx -s reload
 This ensures **zero downtime updates**.
 
 ---
+Chaos Testing:
+
+# Induce errors on Blue
+curl -X POST "http://18.212.76.50:8081/chaos/start?mode=error"
+
+# Verify automatic failover
+curl "http://18.212.76.50:8080/version"
+
+# Stop chaos
+curl -X POST "http://18.212.76.50:8081/chaos/stop"
 
 ## Notes
 
