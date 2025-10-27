@@ -1,18 +1,6 @@
 
 # Blue-Green Deployment with Nginx and Docker Compose on AWS EC2
 
-## Project Structure
-
-```
-project-root/
-├─ dockerfile.nginx
-├─ entrypoint.sh           # entrypoint script 
-├─ .env.example            # Environment variables for Docker images, versions and port
-├─ nginx.conf.template        # config for blue/green deployment
-├─ docker-compose.yml         # Compose file for blue/green deployment
-└─ README.md
-```
-
 ---
 
 ## Environment Variables
@@ -25,11 +13,7 @@ APP_BLUE_IMAGE=<dockerhub_username>/node-app-blue:latest
 APP_GREEN_IMAGE=<dockerhub_username>/node-app-green:latest
 
 # Container ports
-BLUE_PORT=8001
-GREEN_PORT=8002
-NGINX_PORT=8080
-```
-
+PORT=8080
 ---
 
 ## Setup Instructions
@@ -41,32 +25,35 @@ NGINX_PORT=8080
 2. Example `docker-compose.yml`:
 
 ```yaml
-version: "3.8"
+version: '3.8'
 
 services:
-  app_blue:
-    image: ${APP_BLUE_IMAGE}
-    container_name: app_blue
-    ports:
-      - "${BLUE_PORT}: ${PORT}"
-
-  app_green:
-    image: ${APP_GREEN_IMAGE}
-    container_name: app_green
-    ports:
-      - "${GREEN_PORT}:${PORT}"
-
   nginx:
-    image: nginx
-    container_name: nginx
+    image: nginx:1.24-alpine
     ports:
-      - "${NGINX_PORT}:80"
+      - "${PORT}:80"
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
     depends_on:
       - app_blue
       - app_green
-```
+    restart: unless-stopped
+
+  app_blue:
+    image: ${BLUE_IMAGE}
+    environment:
+      - APP_POOL=blue
+      - RELEASE_ID=${RELEASE_ID_BLUE}
+    ports:
+      - "8081:3000"
+
+  app_green:
+    image: ${GREEN_IMAGE}
+    environment:
+      - APP_POOL=green
+      - RELEASE_ID=${RELEASE_ID_GREEN}
+    ports:
+      - "8082:3000"```
 
 3. Start the deployment:
 
@@ -83,23 +70,35 @@ docker-compose up -d
 1. Nginx configuration (`nginx/nginx.conf.TEMPLATE`):
 
 ```nginx
-http {
-    upstream backend {
-        server app_blue:${PORT} max_fails=1 fail_timeout=30s;
-        server app_green:${PORT} max_fails=1 fail_timeout=30s;
-    }
+version: '3.8'
 
-    server {
-        listen 80;
+services:
+  nginx:
+    image: nginx:1.24-alpine
+    ports:
+      - "${PORT}:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - app_blue
+      - app_green
+    restart: unless-stopped
 
-        location / {
-            proxy_pass http://backend;
-            proxy_set_header Host $host;
-            proxy_set_header X-Real-IP $remote_addr;
-        }
-    }
-}
-```
+  app_blue:
+    image: ${BLUE_IMAGE}
+    environment:
+      - APP_POOL=blue
+      - RELEASE_ID=${RELEASE_ID_BLUE}
+    ports:
+      - "8081:3000"
+
+  app_green:
+    image: ${GREEN_IMAGE}
+    environment:
+      - APP_POOL=green
+      - RELEASE_ID=${RELEASE_ID_GREEN}
+    ports:
+      - "8082:3000"```
 
 2. Reload Nginx if you update the configuration:
 
